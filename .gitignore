@@ -1,0 +1,15 @@
+# VM disk images — never commit these
+*.vdi
+*.qcow2
+*.vmdk
+*.vhd
+
+# Downloaded zip
+*.zip
+
+# VM runtime files
+vm-data/
+hostfs/
+
+# Docker
+.env
