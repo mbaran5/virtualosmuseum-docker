@@ -8,13 +8,14 @@ services:
     devices:
       - /dev/kvm:/dev/kvm
     volumes:
-      - /path/to/vm/storage:/vm   # update this to wherever you extracted the museum files
+      - /path/to/vm/storage:/vm
     ports:
-      - "8888:8080"   # noVNC browser UI — change 8888 if it conflicts
-      - "8022:8022"   # SSH into the museum VM (optional, for troubleshooting)
+      - 8888:8080 # noVNC browser UI - change 8888 if it conflicts
+      - 8022:8022 # SSH into the museum VM (optional, useful for troubleshooting)
     environment:
-      - QEMU_RAM=8192   # MB — matches the upstream VirtualBox config
-      - QEMU_CPUS=4     # vCPUs — matches the upstream VirtualBox config
-    shm_size: "512m"
+      - QEMU_RAM=8192 # MB of RAM for the museum VM
+      - QEMU_CPUS=4 # vCPUs
+    # /dev/shm bump helps QEMU with large memory allocations
+    shm_size: 512m
     cap_add:
-      - NET_ADMIN
+      - NET_ADMIN # needed for QEMU user networking
