@@ -1,8 +1,6 @@
 #!/bin/bash
 set -e
 
-# No DISPLAY needed - QEMU serves VNC directly, no Xvfb/SDL involved
-
 # Locate disks and hostfs
 HOST_DISK=$(find /vm -maxdepth 4 -name "host_x86.vdi" | head -1)
 GUEST_DISK=$(find /vm -maxdepth 4 -name "guest_images.vdi" | head -1)
@@ -21,9 +19,6 @@ CPUS=${QEMU_CPUS:-4}
 
 echo "Starting QEMU with ${RAM}MB RAM, ${CPUS} vCPUs..."
 
-# QEMU serves VNC directly on :1 (port 5901)
-# noVNC websockify proxies 5901 -> browser on 8080
-# No Xvfb, no x11vnc, no SDL window positioning issues
 exec qemu-system-x86_64 \
     -enable-kvm \
     -m "${RAM}" \
@@ -37,7 +32,9 @@ exec qemu-system-x86_64 \
     -drive id=disk1,file="${GUEST_DISK}",if=none,discard=unmap \
     -device ide-hd,drive=disk1,bus=ahci.1 \
     -device e1000,netdev=eth0 \
-    -netdev user,id=eth0,hostfwd=tcp::8022-:22,hostfwd=tcp::4711-:4711 \
-    -audio model=hda,driver=none \
+    -netdev user,id=eth0,hostfwd=tcp::8022-:22 \
+    -audiodev pa,id=snd0,server=unix:/tmp/pulse/native \
+    -device intel-hda \
+    -device hda-duplex,audiodev=snd0 \
     -virtfs local,path="${HOSTFS}",mount_tag=hostfs,security_model=mapped \
     -boot c

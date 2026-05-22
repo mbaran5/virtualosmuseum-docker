@@ -9,15 +9,14 @@ RUN apt-get update && apt-get install -y \
     websockify \
     # Process supervisor
     supervisor \
+    # Audio
+    pulseaudio \
     # Audio plugin dependencies
     socat \
     gstreamer1.0-tools \
     gstreamer1.0-plugins-base \
     gstreamer1.0-plugins-good \
     gstreamer1.0-plugins-bad \
-    # SSH client for setup-audio
-    openssh-client \
-    sshpass \
     # Utilities
     wget \
     curl \
@@ -41,17 +40,24 @@ RUN git clone --depth 1 https://github.com/me-asri/noVNC-audio-plugin.git /tmp/a
 
 # Patch vnc.html to load audio plugin
 RUN sed -i 's|</head>|<script type="module" crossorigin="anonymous" src="audio-plugin.js"></script></head>|' /usr/share/novnc/vnc.html
-# Patch vnc.html to add windowed mouse lock
-RUN printf '<script>\nwindow.addEventListener("load", function() {\n    setTimeout(function() {\n        var c = document.querySelector("canvas");\n        if (c) {\n            c.addEventListener("mousedown", function() {\n                c.requestPointerLock();\n            });\n        }\n    }, 3000);\n});\n</script>\n' >> /usr/share/novnc/vnc.html
+
+# Patch vnc.html to add windowed mouse lock and suppress scroll during lock
+RUN printf '<script>\nwindow.addEventListener("load", function() {\n    setTimeout(function() {\n        var c = document.querySelector("canvas");\n        if (c) {\n            c.addEventListener("mousedown", function() {\n                c.requestPointerLock();\n            });\n            document.addEventListener("wheel", function(e) {\n                if (document.pointerLockElement === c) {\n                    e.stopImmediatePropagation();\n                }\n            }, true);\n        }\n    }, 3000);\n});\n</script>\n' >> /usr/share/novnc/vnc.html
 
 # Websockify token config
 RUN mkdir -p /etc/websockify && printf "vnc: 127.0.0.1:5901\naudio: 127.0.0.1:5711\n" > /etc/websockify/token.cfg
+
+# PulseAudio config
+RUN mkdir -p /tmp/pulse
+COPY pulse-default.pa /etc/pulse/default.pa
+
+# Patch audio-proxy to use PulseAudio directly instead of TCP
+RUN sed -i 's|tcpclientsrc port="${pulse_port}" ! rawaudioparse use-sink-caps=false format=pcm pcm-format="${pulse_format}" sample-rate="${pulse_sample_rate}" num-channels="${pulse_channels}"|pulsesrc server=unix:/tmp/pulse/native device=qemu_output.monitor|' /usr/local/bin/audio-proxy.sh
 
 RUN mkdir -p /vm /run/supervisor
 VOLUME ["/vm"]
 COPY supervisord.conf /etc/supervisor/conf.d/virtualosmuseum.conf
 COPY start-qemu.sh /usr/local/bin/start-qemu.sh
-COPY setup-audio.sh /usr/local/bin/setup-audio.sh
-RUN chmod +x /usr/local/bin/start-qemu.sh /usr/local/bin/setup-audio.sh
+RUN chmod +x /usr/local/bin/start-qemu.sh
 EXPOSE 8080
 CMD ["/usr/bin/supervisord", "-n", "-c", "/etc/supervisor/supervisord.conf"]
