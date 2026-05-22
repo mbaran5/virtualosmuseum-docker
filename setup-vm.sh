@@ -11,6 +11,30 @@ DEST="${1:-./vm-data}"
 URL="https://archive.org/download/virtual_os_museum_lite_edition/virtual_os_museum-2026.05.19-lite.zip"
 ZIPFILE="${DEST}/virtual_os_museum-lite.zip"
 
+# Check for unzip
+if ! command -v unzip >/dev/null 2>&1; then
+    echo "ERROR: unzip is not installed."
+    if command -v apt-get >/dev/null 2>&1; then
+        read -r -p "Install it now with apt-get? [y/N] " response
+        [[ "$response" =~ ^[Yy]$ ]] && sudo apt-get install -y unzip || { echo "Please install unzip and re-run."; exit 1; }
+    elif command -v dnf >/dev/null 2>&1; then
+        read -r -p "Install it now with dnf? [y/N] " response
+        [[ "$response" =~ ^[Yy]$ ]] && sudo dnf install -y unzip || { echo "Please install unzip and re-run."; exit 1; }
+    elif command -v yum >/dev/null 2>&1; then
+        read -r -p "Install it now with yum? [y/N] " response
+        [[ "$response" =~ ^[Yy]$ ]] && sudo yum install -y unzip || { echo "Please install unzip and re-run."; exit 1; }
+    elif command -v pacman >/dev/null 2>&1; then
+        read -r -p "Install it now with pacman? [y/N] " response
+        [[ "$response" =~ ^[Yy]$ ]] && sudo pacman -S --noconfirm unzip || { echo "Please install unzip and re-run."; exit 1; }
+    elif command -v brew >/dev/null 2>&1; then
+        read -r -p "Install it now with brew? [y/N] " response
+        [[ "$response" =~ ^[Yy]$ ]] && brew install unzip || { echo "Please install unzip and re-run."; exit 1; }
+    else
+        echo "Please install unzip using your system package manager and re-run."
+        exit 1
+    fi
+fi
+
 echo "==> Destination: ${DEST}"
 mkdir -p "$DEST"
 
