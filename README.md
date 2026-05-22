@@ -28,7 +28,7 @@ QEMU/KVM (museum VM) → built-in VNC :5901 → noVNC → browser
 **1. Clone this repo**
 
 ```bash
-git clone https://github.com/yourusername/virtualosmuseum-docker
+git clone https://github.com/mbaran5/virtualosmuseum-docker
 cd virtualosmuseum-docker
 ```
 
